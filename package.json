@@ -3,14 +3,23 @@
   "version": "0.0.5",
   "description": "ejercicios de typescript",
   "main": "app.js",
+  "type":"module",
   "scripts": {
-    "build": "tsc",
+    "build-all": "tsc --build --force",
+    "build": "tsc --build --clean",
     "prestart": "npm run build",
-    "start": "node build/app.js"
+    "start": "node build/app.js",
+    "pretest": "npm run build",
+    "test": "mocha --reporter spec --require public/test.cjs build/test --recursive"
   },
-  "author": "",
+  "author": "Santiago Galván",
   "license": "ISC",
   "devDependencies": {
+    "@types/chai": "^4.2.15",
+    "@types/mocha": "^8.2.1",
+    "chai": "^4.3.0",
+    "esm": "^3.2.25",
+    "mocha": "^8.3.0",
     "typescript": "^4.1.5"
   }
 }
