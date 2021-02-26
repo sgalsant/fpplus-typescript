@@ -6,9 +6,9 @@
   "type":"module",
   "scripts": {
     "build-all": "tsc --build --force",
-    "build": "tsc --build --clean",
+    "build": "tsc --build",
     "prestart": "npm run build",
-    "start": "node build/app.js",
+    "start": "node build/src/app.js",
     "pretest": "npm run build",
     "test": "mocha --reporter spec --require public/test.cjs build/test --recursive"
   },
