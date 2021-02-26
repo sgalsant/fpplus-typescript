@@ -2,11 +2,11 @@
   "name": "fp-plus",
   "version": "0.0.5",
   "description": "ejercicios de typescript",
-  "main": "index.js",
+  "main": "app.js",
   "scripts": {
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node build/index.js"
+    "start": "node build/app.js"
   },
   "author": "",
   "license": "ISC",
