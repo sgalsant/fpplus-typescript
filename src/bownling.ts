@@ -14,13 +14,13 @@ export enum FrameTypes {
 export type Frame = {
     type: FrameTypes,
     knocked1: KnockedPin,
-    knocked2: KnockedPin,
-    bonus1: KnockedPin,
-    bonus2: KnockedPin,
+    knocked2: KnockedPin | undefined, // puede ser indefinido si no se ha lanzado la segunda tirada
+    bonus1: KnockedPin | undefined,  // puede ser indefinido si es un strike o spare y no se ha lanzado la tirada del bonus
+    bonus2: KnockedPin | undefined,
 }
 
 
-type Incomplete = Frame & {type: FrameTypes.INCOMPLETE, knocked1: KnockedPinNot10, knocked2: 0, bonus1: 0, bonus2: 0};
+type Incomplete = Frame & {type: FrameTypes.INCOMPLETE, knocked1: KnockedPinNot10, knocked2: undefined, bonus1: undefined, bonus2: 0};
 type Normal = Frame & {type: FrameTypes.NORMAL, knocked1: KnockedPinNot10, knocked2: KnockedPinNot10, bonus1: 0, bonus2: 0};
 type Strike = Frame & {type: FrameTypes.STRIKE, knocked1: 10, knocked2: 0};
 type Spare = Frame & {type: FrameTypes.SPARE, knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus2: 0};
@@ -30,8 +30,8 @@ function incomplete(knocked: KnockedPinNot10): Incomplete {
     return {
         type: FrameTypes.INCOMPLETE,
         knocked1: knocked, 
-        knocked2: 0,
-        bonus1: 0, 
+        knocked2: undefined,
+        bonus1: undefined, 
         bonus2: 0
     }
 }
@@ -46,7 +46,7 @@ function normal(knocked1: KnockedPinNot10, knocked2: KnockedPinNot10): Normal {
     }  
 }
 
-function strike(bonus1: KnockedPin, bonus2: KnockedPin): Strike {
+function strike(bonus1: KnockedPin | undefined, bonus2: KnockedPin | undefined): Strike {
     return {
         type: FrameTypes.STRIKE,
         knocked1: 10, 
@@ -56,7 +56,7 @@ function strike(bonus1: KnockedPin, bonus2: KnockedPin): Strike {
     }    
 }
 
-function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPin): Spare {
+function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPin | undefined): Spare {
     return {
         type: FrameTypes.SPARE,
         knocked1: knocked1, 
@@ -84,13 +84,13 @@ export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): A
     let frame: Frame;
     let index = 1;
     if (knockeds[0] === 10) { // strike
-        frame = strike(knockeds[1] ?? 0, knockeds[2] ?? 0);
+        frame = strike(knockeds[1], knockeds[2]);
     } else if (knockeds.length < 2) { // no completado frame, falta segunda tirada, puede ser normal o spare
         frame = incomplete(knockeds[0]);
     } else {
         index++;
         if (knockeds[0] + knockeds[1] == 10) { // spare
-            frame = spare(knockeds[0], knockeds[1], knockeds[2] ?? 0);
+            frame = spare(knockeds[0], knockeds[1], knockeds[2]);
         } else if (knockeds[1] != 10 && knockeds[0] + knockeds[1] < 10) {
             frame = normal(knockeds[0], knockeds[1]);
         } else {
@@ -101,9 +101,7 @@ export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): A
     if (frameIndex == 10 || index >= knockeds.length) {
         return [frame];
     } else {
-        let result = toFrames(knockeds.slice(index), frameIndex +1 );
-        result.unshift(frame);
-        return result;
+        return [frame, ...toFrames(knockeds.slice(index), frameIndex +1 )];
     }
 }
 
@@ -114,7 +112,7 @@ export function knockedPinToPoints(knocked: KnockedPin[]): number {
 export function frameToPoints(frame: Frame): number {
     switch (frame.type) {
         case FrameTypes.ERROR: return 0;
-        default: return frame.knocked1 + frame.knocked2 + frame.bonus1 + frame.bonus2;
+        default: return frame.knocked1 + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
     }
 }
 
