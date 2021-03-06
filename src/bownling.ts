@@ -122,9 +122,5 @@ export function framesToPoints(frames: Frame[]): number {
     }, 0);
 }
 
-// obsoleta
-export function toPoints(frames: Array<Frame>): number {
-    return framesToPoints(frames);
-}
 
 
