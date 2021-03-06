@@ -16,8 +16,9 @@ export type Frame = {
     knocked1: KnockedPin,
     knocked2: KnockedPin,
     bonus1: KnockedPin,
-    bonus2: KnockedPin
+    bonus2: KnockedPin,
 }
+
 
 type Incomplete = Frame & {type: FrameTypes.INCOMPLETE, knocked1: KnockedPinNot10, knocked2: 0, bonus1: 0, bonus2: 0};
 type Normal = Frame & {type: FrameTypes.NORMAL, knocked1: KnockedPinNot10, knocked2: KnockedPinNot10, bonus1: 0, bonus2: 0};
@@ -75,7 +76,6 @@ function error(knocked1: KnockedPin, knocked2: KnockedPin): Error {
     }  
 }
 
-
 export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
     if (knockeds.length == 0) {
         return [];
@@ -84,13 +84,13 @@ export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): A
     let frame: Frame;
     let index = 1;
     if (knockeds[0] === 10) { // strike
-        frame = strike(1 < knockeds.length?knockeds[1]:0, 2 < knockeds.length?knockeds[2]:0);
+        frame = strike(knockeds[1] ?? 0, knockeds[2] ?? 0);
     } else if (knockeds.length < 2) { // no completado frame, falta segunda tirada, puede ser normal o spare
         frame = incomplete(knockeds[0]);
     } else {
         index++;
         if (knockeds[0] + knockeds[1] == 10) { // spare
-            frame = spare(knockeds[0], knockeds[1], 2 < knockeds.length? knockeds[2]: 0);
+            frame = spare(knockeds[0], knockeds[1], knockeds[2] ?? 0);
         } else if (knockeds[1] != 10 && knockeds[0] + knockeds[1] < 10) {
             frame = normal(knockeds[0], knockeds[1]);
         } else {
@@ -107,11 +107,26 @@ export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): A
     }
 }
 
+export function knockedPinToPoints(knocked: KnockedPin[]): number {
+    return framesToPoints(toFrames(knocked));
+}
+
+export function frameToPoints(frame: Frame): number {
+    switch (frame.type) {
+        case FrameTypes.ERROR: return 0;
+        default: return frame.knocked1 + frame.knocked2 + frame.bonus1 + frame.bonus2;
+    }
+}
+
+export function framesToPoints(frames: Frame[]): number {
+    return frames.reduce((previous, current) => {
+        return previous + frameToPoints(current);
+    }, 0);
+}
+
+// obsoleta
 export function toPoints(frames: Array<Frame>): number {
-    return frames.filter(frame => frame.type != FrameTypes.ERROR)
-            .reduce((previous, current, index, array) => {
-                    return previous + current.knocked1 + current.knocked2 + current.bonus1 + current.bonus2;
-             }, 0)
+    return framesToPoints(frames);
 }
 
 
