@@ -102,49 +102,49 @@ export function toType(frame: Frame): FrameTypes {
    return frame.type;
 }
 
-function toError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Error | undefined {
+function checkError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Error | undefined {
     return knocked1 == 10 && (knocked2 != 10 && (knocked2 ?? 0) + (knocked3 ??0) > 10)? error("error en bonus de strike", knocked1, undefined, knocked2, knocked3): 
            knocked1 != 10 && knocked1 + (knocked2 ?? 0) > 10?  error( "knocked1 + knocked2 > 10", knocked1, knocked2):
            undefined;
 }
 
-function toStrike(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Strike | Error | undefined {
+function checkStrike(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Strike | undefined {
     return knocked1 == 10 ? strike(knocked2, knocked3) : undefined;
 }
 
-function toSpare(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Spare | undefined {
+function checkSpare(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Spare | undefined {
     return knocked1 != 10 
             && knocked2 != undefined 
             && knocked1 + knocked2  == 10? spare(knocked1, knocked2, knocked3) : undefined;
 }
 
-function toNormal(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Normal | Error | undefined {
+function checkNormal(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Normal | undefined {
     return knocked1 != 10 && knocked2 != undefined && knocked2 != 10 && knocked1 + knocked2  != 10? normal(knocked1, knocked2) :
            undefined;
 }
 
-function toIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting): Incomplete | undefined {
+function checkIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting): Incomplete | undefined {
     return knocked != 10 
              && knocked2 == undefined ? incomplete(knocked) : undefined
 }
 
-function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Frame | Unit{
-    return toError(knocked1, knocked2, knocked3) ?? 
-            toStrike(knocked1, knocked2, knocked3) ??
-            toSpare(knocked1, knocked2, knocked3) ??
-               toNormal(knocked1, knocked2) ??
-               toIncomplete(knocked1, knocked2) ??
-               unit()
+function buildFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Frame | Unit{
+    return checkError(knocked1, knocked2, knocked3) ?? 
+            checkStrike(knocked1, knocked2, knocked3) ??
+            checkSpare(knocked1, knocked2, knocked3) ??
+            checkNormal(knocked1, knocked2) ??
+            checkIncomplete(knocked1, knocked2) ??
+            unit()
 }
 
-export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
+export function buildFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
     return frameIndex > 10 || knockeds.length == 0? [] :
-       [toFrame(knockeds[0], knockeds[1], knockeds[2]), 
-        ...toFrames(knockeds.slice(knockeds[0] == 10? 1: 2), frameIndex +1 )];  
+       [buildFrame(knockeds[0], knockeds[1], knockeds[2]), 
+        ...buildFrames(knockeds.slice(knockeds[0] == 10? 1: 2), frameIndex +1 )];  
 }
 
 export function knockedPinToPoints(knocked: KnockedPin[]): number {
-    return framesToPoints(toFrames(knocked));
+    return framesToPoints(buildFrames(knocked));
 }
 
 export function frameToPoints(frame: Frame): number {
