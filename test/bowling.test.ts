@@ -60,6 +60,32 @@ describe('bowling', function() {
       chai.assert.equal(30, framesToPoints(frames));
     });
 
+    it('strike con dos tiradas adicionales erroneas', function() {
+      let frames = toFrames([10, 8, 4]);
+      chai.assert.equal(2, frames.length);
+      chai.assert.equal(FrameTypes.ERROR, toType(frames[0]));
+      chai.assert.equal(FrameTypes.ERROR, toType(frames[1]));
+      chai.assert.equal(0, framesToPoints(frames));
+    });
+
+    it('strike con una tirada adicional 10', function() {
+      let frames = toFrames([10, 10, 4]);
+      chai.assert.equal(3, frames.length);
+      chai.assert.equal(FrameTypes.STRIKE, toType(frames[0]));
+      chai.assert.equal(FrameTypes.STRIKE, toType(frames[1]));
+      chai.assert.equal(FrameTypes.INCOMPLETE, toType(frames[2]));
+      chai.assert.equal(42, framesToPoints(frames));
+    });
+
+    it('strike con dos tiradas adicionales 10', function() {
+      let frames = toFrames([10, 10, 10]);
+      chai.assert.equal(3, frames.length);
+      chai.assert.equal(FrameTypes.STRIKE, toType(frames[0]));
+      chai.assert.equal(FrameTypes.STRIKE, toType(frames[1]));
+      chai.assert.equal(FrameTypes.STRIKE, toType(frames[2]));
+      chai.assert.equal(60, framesToPoints(frames));
+    });
+
     it('strike consecutivos', function() {
       let frames = toFrames([10, 10, 10]);
       chai.assert.equal(3, frames.length);

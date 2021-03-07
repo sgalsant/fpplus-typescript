@@ -15,41 +15,45 @@ export enum FrameTypes {
     ERROR, // knocked1 + knocked2 > 10
 }
 
-
-export type Frame = {
+export type Frame = Readonly<{
+    type: FrameTypes,
     knocked1?: KnockedPin,
     knocked2?: KnockedPinOrWaiting, 
     bonus1?: KnockedPinOrWaiting, 
     bonus2?: KnockedPinOrWaiting,
-    error?: "knocked1 + knocked2 es mayor de 10",
-};
+    error?: String,
+}>;
 
-type Unit = {}; // no se ha realizado la primera tirada. A lo mejor ni ha entrado en la bolera :)
+type Unit = Pick<Frame, "type"> 
+            & {type: FrameTypes.UNIT}; // no se ha realizado ninguna tirada del frame y a lo mejor nunca se realiza :)
 
-function unit(): Unit {
-    return {};
-}
-
-function isUnit(frame: Frame): Boolean {
-    return !("knocked1" in frame);
-}
-
-type Incomplete = Frame & {knocked1: KnockedPinNot10};
-type Normal = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
-type Strike = Frame & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
-type Spare = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};
-type Error = Frame & {knocked1: KnockedPin, knocked2: KnockedPin, error: "knocked1 + knocked2 es mayor de 10"}; // knocked1 + knocked2 > 10 (entre 11 y 19)
+type Spare = Omit<Frame, "error" | "bonus2">
+                & {type: FrameTypes.SPARE}
+                & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};   
+type Normal = Omit<Frame, "error" | "bonus2" | "bonus1">
+                & {type: FrameTypes.NORMAL}
+                & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
+type Incomplete = Pick<Frame, "type" | "knocked1">
+                & {type: FrameTypes.INCOMPLETE};
+type Strike = Omit<Frame, "error" | "knocked2"> 
+                & {type: FrameTypes.STRIKE}
+                & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
+type Error = Omit<Frame, "bonus1" | "bonus2">
+                & {type: FrameTypes.ERROR}
+                & {knocked1: KnockedPin, knocked2: KnockedPin, error: String}
 
 
 
 function incomplete(knocked: KnockedPinNot10): Incomplete {
     return {
+        type: FrameTypes.INCOMPLETE,
         knocked1: knocked, 
     }
 }
 
 function normal(knocked1: KnockedPinNot10, knocked2: KnockedPinNot10): Normal {
     return {
+        type: FrameTypes.NORMAL,
         knocked1: knocked1, 
         knocked2: knocked2,
     }  
@@ -57,6 +61,7 @@ function normal(knocked1: KnockedPinNot10, knocked2: KnockedPinNot10): Normal {
 
 function strike(bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting): Strike {
     return {
+        type: FrameTypes.STRIKE,
         knocked1: 10, 
         bonus1: bonus1, 
         bonus2: bonus2
@@ -65,6 +70,7 @@ function strike(bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting): Strik
 
 function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPinOrWaiting): Spare {
     return {
+        type: FrameTypes.SPARE,
         knocked1: knocked1, 
         knocked2: knocked2,
         bonus1: bonus, 
@@ -73,39 +79,44 @@ function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPi
 
 function error(knocked1: KnockedPin, knocked2: KnockedPin): Error {
     return {
+        type: FrameTypes.ERROR,
         knocked1: knocked1, 
         knocked2: knocked2,
         error: "knocked1 + knocked2 es mayor de 10"
     }  
 }
 
+function unit(): Unit {
+    return {type: FrameTypes.UNIT};
+}
+
+export function isUnit(frame: Frame): Boolean {
+    return frame.type == FrameTypes.UNIT;
+}
+
 export function isError(frame: Frame): Boolean {
-  return "error" in frame;
+  return frame.type == FrameTypes.ERROR;
 }
 
 function isStrike(frame: Frame): Boolean {
-    return "bonus1" in frame && "bonus2" in frame
+    return frame.type == FrameTypes.STRIKE;
 }
 
 function isSpare(frame: Frame): Boolean {
-    return "bonus1" in frame && !("bonus2" in frame);
+    return frame.type == FrameTypes.SPARE;
 }
 
 function isNormal(frame: Frame): Boolean {
-    return !isError(frame) && "knocked1" in frame && "knocked2" in frame && !("bonus1" in frame) && !("bonus2" in frame);
+    return frame.type == FrameTypes.NORMAL;
 }
 
 function isIncomplete(frame: Frame): Boolean {
-    return "knocked1" in frame && !("knocked2" in frame) && !("bonus1" in frame);
+    return frame.type == FrameTypes.INCOMPLETE;
 }
 
+
 export function toType(frame: Frame): FrameTypes {
-   return isError(frame) ? FrameTypes.ERROR :
-          isStrike(frame) ? FrameTypes.STRIKE :
-          isSpare(frame) ? FrameTypes.SPARE :
-          isNormal(frame) ? FrameTypes.NORMAL :
-          isIncomplete(frame) ? FrameTypes.INCOMPLETE :
-          FrameTypes.UNIT
+   return frame.type;
 }
 
 function toError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Error | undefined {
@@ -114,7 +125,7 @@ function toError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Error | u
 }
 
 function toStrike(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Strike | undefined {
-    return knocked1 == 10? strike(knocked2, knocked3) : undefined;
+    return knocked1 == 10 && (knocked2 == 10 || (knocked2 ?? 0) + (knocked3 ??0) <= 10)? strike(knocked2, knocked3) : undefined;
 }
 
 function toSpare(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Spare | undefined {
