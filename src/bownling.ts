@@ -154,11 +154,8 @@ export function knockedPinToPoints(knocked: KnockedPin[]): number {
 }
 
 export function frameToPoints(frame: Frame): number {
-    if (isError(frame) || isUnit(frame)) {
-       return 0;
-    } else {
-       return (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
-    }
+    return isError(frame) || isUnit(frame) ? 0 :
+       (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
 }
 
 export function framesToPoints(frames: Frame[]): number {
