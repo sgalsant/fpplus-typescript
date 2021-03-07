@@ -129,7 +129,7 @@ function toNormal(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Normal |
             && knocked1 + knocked2 < 10? normal(knocked1, knocked2) : undefined;
 }
 
-function toIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting,): Incomplete | undefined {
+function toIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting): Incomplete | undefined {
     return knocked != 10 
              && knocked2 == undefined ? incomplete(knocked) : undefined
 }
