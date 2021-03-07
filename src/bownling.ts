@@ -30,14 +30,18 @@ type Unit = Pick<Frame, "type">
 type Spare = Omit<Frame, "error" | "bonus2">
                 & {type: FrameTypes.SPARE}
                 & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};   
+
 type Normal = Omit<Frame, "error" | "bonus2" | "bonus1">
                 & {type: FrameTypes.NORMAL}
                 & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
+
 type Incomplete = Pick<Frame, "type" | "knocked1">
                 & {type: FrameTypes.INCOMPLETE};
+
 type Strike = Omit<Frame, "error" | "knocked2"> 
                 & {type: FrameTypes.STRIKE}
                 & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
+
 type Error = Omit<Frame, "bonus1" | "bonus2">
                 & {type: FrameTypes.ERROR}
                 & {knocked1: KnockedPin, error: String}
