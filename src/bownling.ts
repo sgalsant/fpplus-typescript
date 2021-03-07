@@ -102,15 +102,14 @@ export function toType(frame: Frame): FrameTypes {
    return frame.type;
 }
 
-function toError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Error | undefined {
-    return knocked2 != undefined 
-            && knocked1 + knocked2 > 10? error( "knocked1 + knocked2 > 10", knocked1, knocked2,) : undefined;
+function toError(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Error | undefined {
+    return knocked1 == 10 && (knocked2 != 10 && (knocked2 ?? 0) + (knocked3 ??0) > 10)? error("error en bonus de strike", knocked1, undefined, knocked2, knocked3): 
+           knocked1 != 10 && knocked1 + (knocked2 ?? 0) > 10?  error( "knocked1 + knocked2 > 10", knocked1, knocked2):
+           undefined;
 }
 
 function toStrike(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Strike | Error | undefined {
-    return knocked1 != 10 ? undefined :
-            (knocked2 != 10 && (knocked2 ?? 0) + (knocked3 ??0) > 10)? error("error en bonus de strike", knocked1, undefined, knocked2, knocked3): 
-            strike(knocked2, knocked3);
+    return knocked1 == 10 ? strike(knocked2, knocked3) : undefined;
 }
 
 function toSpare(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Spare | undefined {
@@ -120,10 +119,8 @@ function toSpare(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: 
 }
 
 function toNormal(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting): Normal | Error | undefined {
-    return knocked1 == 10 || knocked2 == undefined || knocked1 + knocked2  == 10? undefined :
-           knocked1 + knocked2 > 10? error( "knocked1 + knocked2 > 10", knocked1, knocked2) :
-           knocked2 == 10? undefined :        
-           normal(knocked1, knocked2);
+    return knocked1 != 10 && knocked2 != undefined && knocked2 != 10 && knocked1 + knocked2  != 10? normal(knocked1, knocked2) :
+           undefined;
 }
 
 function toIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting): Incomplete | undefined {
@@ -132,9 +129,9 @@ function toIncomplete(knocked: KnockedPin, knocked2: KnockedPinOrWaiting): Incom
 }
 
 function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting): Frame | Unit{
-        return toStrike(knocked1, knocked2, knocked3) ??
-               toError(knocked1, knocked2) ??
-               toSpare(knocked1, knocked2, knocked3) ??
+    return toError(knocked1, knocked2, knocked3) ?? 
+            toStrike(knocked1, knocked2, knocked3) ??
+            toSpare(knocked1, knocked2, knocked3) ??
                toNormal(knocked1, knocked2) ??
                toIncomplete(knocked1, knocked2) ??
                unit()
