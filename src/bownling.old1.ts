@@ -1,10 +1,7 @@
 // Kata bowling empleando definición de tipos en Typescript para definir los frames
 
-
+type KnockedPin = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
 type KnockedPinNot10 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-type KnockedPin = KnockedPinNot10 | 10;
-type KnockedPinOrWaiting = KnockedPin | undefined; // undefined indica que se espera su lanzamiento
-
 
 export enum FrameTypes {
     INCOMPLETE, // falta la segunda tirada, no se sabe si es normal o spare
@@ -15,73 +12,68 @@ export enum FrameTypes {
 }
 
 export type Frame = {
+    type: FrameTypes,
     knocked1: KnockedPin,
-    knocked2?: KnockedPinOrWaiting, 
-    bonus1?: KnockedPinOrWaiting, 
-    bonus2?: KnockedPinOrWaiting,
-    error?: "knocked1 + knocked2 es mayor de 10",
+    knocked2: KnockedPin | undefined, // puede ser indefinido si no se ha lanzado la segunda tirada
+    bonus1: KnockedPin | undefined,  // puede ser indefinido si es un strike o spare y no se ha lanzado la tirada del bonus
+    bonus2: KnockedPin | undefined,
 }
 
 
-type Incomplete = Frame & {knocked1: KnockedPinNot10};
-type Normal = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
-type Strike = Frame & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
-type Spare = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};
-type Error = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, error: "knocked1 + knocked2 es mayor de 10"}; // knocked1 + knocked2 > 10 (entre 11 y 19)
+type Incomplete = Frame & {type: FrameTypes.INCOMPLETE, knocked1: KnockedPinNot10, knocked2: undefined, bonus1: undefined, bonus2: 0};
+type Normal = Frame & {type: FrameTypes.NORMAL, knocked1: KnockedPinNot10, knocked2: KnockedPinNot10, bonus1: 0, bonus2: 0};
+type Strike = Frame & {type: FrameTypes.STRIKE, knocked1: 10, knocked2: 0};
+type Spare = Frame & {type: FrameTypes.SPARE, knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus2: 0};
+type Error = Frame & {type: FrameTypes.ERROR, bonus1: 0, bonus2: 0}
 
 function incomplete(knocked: KnockedPinNot10): Incomplete {
     return {
+        type: FrameTypes.INCOMPLETE,
         knocked1: knocked, 
+        knocked2: undefined,
+        bonus1: undefined, 
+        bonus2: 0
     }
 }
 
 function normal(knocked1: KnockedPinNot10, knocked2: KnockedPinNot10): Normal {
     return {
+        type: FrameTypes.NORMAL,
         knocked1: knocked1, 
         knocked2: knocked2,
+        bonus1: 0, 
+        bonus2: 0
     }  
 }
 
-function strike(bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting): Strike {
+function strike(bonus1: KnockedPin | undefined, bonus2: KnockedPin | undefined): Strike {
     return {
+        type: FrameTypes.STRIKE,
         knocked1: 10, 
+        knocked2: 0,
         bonus1: bonus1, 
         bonus2: bonus2
     }    
 }
 
-function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPinOrWaiting): Spare {
+function spare(knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus: KnockedPin | undefined): Spare {
     return {
+        type: FrameTypes.SPARE,
         knocked1: knocked1, 
         knocked2: knocked2,
         bonus1: bonus, 
+        bonus2: 0
     }    
 }
 
-function error(knocked1: KnockedPinNot10, knocked2: KnockedPin): Error {
+function error(knocked1: KnockedPin, knocked2: KnockedPin): Error {
     return {
+        type: FrameTypes.ERROR,
         knocked1: knocked1, 
         knocked2: knocked2,
-        error: "knocked1 + knocked2 es mayor de 10"
+        bonus1: 0, 
+        bonus2: 0
     }  
-}
-
-export function isError(frame: Frame): Boolean {
-  return "error" in frame;
-}
-
-export function toType(frame: Frame): FrameTypes {
-    if (isError(frame)) {
-        return FrameTypes.ERROR;
-    } else if ("bonus1" in frame && "bonus2" in frame) {
-        return FrameTypes.STRIKE;
-    } else if (!("knocked2" in frame)) {
-        return FrameTypes.INCOMPLETE
-    } else if (!("bonus1" in frame)) {
-        return FrameTypes.NORMAL
-    } else {
-        return FrameTypes.SPARE;
-    }
 }
 
 export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
@@ -118,10 +110,9 @@ export function knockedPinToPoints(knocked: KnockedPin[]): number {
 }
 
 export function frameToPoints(frame: Frame): number {
-    if (isError(frame)) {
-       return 0;
-    } else {
-       return frame.knocked1 + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
+    switch (frame.type) {
+        case FrameTypes.ERROR: return 0;
+        default: return frame.knocked1 + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
     }
 }
 
