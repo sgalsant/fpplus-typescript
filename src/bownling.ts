@@ -24,7 +24,16 @@ export type Frame = {
     error?: "knocked1 + knocked2 es mayor de 10",
 };
 
-type Unit = {}; // frame vacío, no se ha realizado la primera tirada
+type Unit = {}; // no se ha realizado la primera tirada. A lo mejor ni ha entrado en la bolera :)
+
+function unit(): Unit {
+    return {};
+}
+
+function isUnit(frame: Frame): Boolean {
+    return !("knocked1" in frame);
+}
+
 type Incomplete = Frame & {knocked1: KnockedPinNot10};
 type Normal = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
 type Strike = Frame & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
@@ -32,9 +41,6 @@ type Spare = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: K
 type Error = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, error: "knocked1 + knocked2 es mayor de 10"}; // knocked1 + knocked2 > 10 (entre 11 y 19)
 
 
-function unit(): Unit {
-    return {};
-}
 
 function incomplete(knocked: KnockedPinNot10): Incomplete {
     return {
@@ -77,10 +83,6 @@ export function isError(frame: Frame): Boolean {
   return "error" in frame;
 }
 
-function isUnit(frame: Frame): Boolean {
-    return !("knocked1" in frame);
-}
-
 export function toType(frame: Frame): FrameTypes {
     if (isError(frame)) {
         return FrameTypes.ERROR;
@@ -97,9 +99,9 @@ export function toType(frame: Frame): FrameTypes {
     }
 }
 
-function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting,
-    knocked3: KnockedPinOrWaiting): Frame | Unit{
-        if (knocked1 == undefined) {
+function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting, knocked3: KnockedPinOrWaiting, 
+    frameIndex: number): Frame | Unit{
+        if (knocked1 == undefined || frameIndex > 10) {
             return unit();
         } else if (knocked1 === 10) { // strike
             return strike(knocked2, knocked3);
@@ -117,12 +119,10 @@ function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting,
     }
 
 export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
-    let frame = toFrame(knockeds[0], knockeds[1], knockeds[2]);
+    let frame = toFrame(knockeds[0], knockeds[1], knockeds[2], frameIndex);
 
     if (isUnit(frame)) {
-        return [];
-    } else if (frameIndex == 10 || 1 >= knockeds.length || ("knocked2" in frame && 2 >= knockeds.length)){
-        return [frame];
+       return [];
     } else {
        return [frame, ...toFrames(knockeds.slice("knocked2" in frame?2:1), frameIndex +1 )];
     }
