@@ -28,23 +28,23 @@ type Unit = Pick<Frame, "type">
             & {type: FrameTypes.UNIT}; // no se ha realizado ninguna tirada del frame y a lo mejor nunca se realiza :)
 
 type Spare = Omit<Frame, "error" | "bonus2">
-                & {type: FrameTypes.SPARE}
-                & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};   
+                & {type: FrameTypes.SPARE,
+                   knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};   
 
 type Normal = Omit<Frame, "error" | "bonus2" | "bonus1">
-                & {type: FrameTypes.NORMAL}
-                & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
+                & {type: FrameTypes.NORMAL,
+                   knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
 
 type Incomplete = Pick<Frame, "type" | "knocked1">
-                & {type: FrameTypes.INCOMPLETE};
+                & {type: FrameTypes.INCOMPLETE, knocked1: KnockedPinNot10};
 
 type Strike = Omit<Frame, "error" | "knocked2"> 
-                & {type: FrameTypes.STRIKE}
-                & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
+                & {type: FrameTypes.STRIKE,
+                   knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
 
-type Error = Omit<Frame, "bonus1" | "bonus2">
-                & {type: FrameTypes.ERROR}
-                & {knocked1: KnockedPin, error: String}
+type Error = Frame
+                & {type: FrameTypes.ERROR, 
+                   knocked1: KnockedPin, error: String}
 
 
 
@@ -86,6 +86,8 @@ function error(error: String, knocked1: KnockedPin, knocked2?: KnockedPin, bonus
         type: FrameTypes.ERROR,
         knocked1: knocked1, 
         knocked2: knocked2,
+        bonus1: bonus1,
+        bonus2: bonus2,
         error: error
     }  
 }
