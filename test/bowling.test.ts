@@ -43,14 +43,14 @@ describe('bowling', function() {
       let frames = toFrames([10]);
       chai.assert.equal(1, frames.length);
       chai.assert.equal(FrameTypes.STRIKE, toType(frames[0]));
-      chai.assert.equal(10, framesToPoints(frames));
+      chai.assert.equal(framesToPoints(frames), 10);
     });
 
     it('strike con una tirada adicional', function() {
       let frames = toFrames([10, 8]);
       chai.assert.equal(2, frames.length);
       chai.assert.equal(FrameTypes.STRIKE, toType(frames[0]));
-      chai.assert.equal(26, framesToPoints(frames));
+      chai.assert.equal(framesToPoints(frames), 26);
     });
 
     it('strike con dos tiradas adicionales', function() {

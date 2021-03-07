@@ -7,6 +7,7 @@ type KnockedPinOrWaiting = KnockedPin | undefined; // undefined indica que se es
 
 
 export enum FrameTypes {
+    UNIT,
     INCOMPLETE, // falta la segunda tirada, no se sabe si es normal o spare
     NORMAL,
     STRIKE,
@@ -14,20 +15,26 @@ export enum FrameTypes {
     ERROR, // knocked1 + knocked2 > 10
 }
 
+
 export type Frame = {
-    knocked1: KnockedPin,
+    knocked1?: KnockedPin,
     knocked2?: KnockedPinOrWaiting, 
     bonus1?: KnockedPinOrWaiting, 
     bonus2?: KnockedPinOrWaiting,
     error?: "knocked1 + knocked2 es mayor de 10",
-}
+};
 
-
+type Unit = {}; // frame vacío, no se ha realizado la primera tirada
 type Incomplete = Frame & {knocked1: KnockedPinNot10};
 type Normal = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
 type Strike = Frame & {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
 type Spare = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting};
 type Error = Frame & {knocked1: KnockedPinNot10, knocked2: KnockedPin, error: "knocked1 + knocked2 es mayor de 10"}; // knocked1 + knocked2 > 10 (entre 11 y 19)
+
+
+function unit(): Unit {
+    return {};
+}
 
 function incomplete(knocked: KnockedPinNot10): Incomplete {
     return {
@@ -70,9 +77,15 @@ export function isError(frame: Frame): Boolean {
   return "error" in frame;
 }
 
+function isUnit(frame: Frame): Boolean {
+    return !("knocked1" in frame);
+}
+
 export function toType(frame: Frame): FrameTypes {
     if (isError(frame)) {
         return FrameTypes.ERROR;
+    } else if (isUnit(frame)) {
+        return FrameTypes.UNIT;
     } else if ("bonus1" in frame && "bonus2" in frame) {
         return FrameTypes.STRIKE;
     } else if (!("knocked2" in frame)) {
@@ -84,32 +97,34 @@ export function toType(frame: Frame): FrameTypes {
     }
 }
 
-export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
-    if (knockeds.length == 0) {
-        return [];
-    }
-
-    let frame: Frame;
-    let index = 1;
-    if (knockeds[0] === 10) { // strike
-        frame = strike(knockeds[1], knockeds[2]);
-    } else if (knockeds.length < 2) { // no completado frame, falta segunda tirada, puede ser normal o spare
-        frame = incomplete(knockeds[0]);
-    } else {
-        index++;
-        if (knockeds[0] + knockeds[1] == 10) { // spare
-            frame = spare(knockeds[0], knockeds[1], knockeds[2]);
-        } else if (knockeds[1] != 10 && knockeds[0] + knockeds[1] < 10) {
-            frame = normal(knockeds[0], knockeds[1]);
+function toFrame(knocked1: KnockedPin, knocked2: KnockedPinOrWaiting,
+    knocked3: KnockedPinOrWaiting): Frame | Unit{
+        if (knocked1 == undefined) {
+            return unit();
+        } else if (knocked1 === 10) { // strike
+            return strike(knocked2, knocked3);
+        } else if (knocked2 === undefined) { // no completado frame, falta segunda tirada, puede ser normal o spare
+            return incomplete(knocked1);
         } else {
-           frame = error(knockeds[0], knockeds[1]);
-        }
+            if (knocked1 + knocked2 == 10) { // spare
+                return spare(knocked1, knocked2, knocked3);
+            } else if (knocked2 != 10 && knocked1 + knocked2 < 10) {
+                return normal(knocked1, knocked2);
+            } else {
+               return error(knocked1, knocked2);
+            }
+        }    
     }
 
-    if (frameIndex == 10 || index >= knockeds.length) {
+export function toFrames(knockeds: Array<KnockedPin>, frameIndex: number = 1): Array<Frame> {
+    let frame = toFrame(knockeds[0], knockeds[1], knockeds[2]);
+
+    if (isUnit(frame)) {
+        return [];
+    } else if (frameIndex == 10 || 1 >= knockeds.length || ("knocked2" in frame && 2 >= knockeds.length)){
         return [frame];
     } else {
-        return [frame, ...toFrames(knockeds.slice(index), frameIndex +1 )];
+       return [frame, ...toFrames(knockeds.slice("knocked2" in frame?2:1), frameIndex +1 )];
     }
 }
 
@@ -118,10 +133,10 @@ export function knockedPinToPoints(knocked: KnockedPin[]): number {
 }
 
 export function frameToPoints(frame: Frame): number {
-    if (isError(frame)) {
+    if (isError(frame) || isUnit(frame)) {
        return 0;
     } else {
-       return frame.knocked1 + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
+       return (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
     }
 }
 
