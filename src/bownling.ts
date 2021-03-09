@@ -1,6 +1,5 @@
 // Kata bowling empleando definición de tipos en Typescript para definir los frames
 
-import { knockedPinToPoints } from "./bownling.old1";
 
 
 type KnockedPinNot10 = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
