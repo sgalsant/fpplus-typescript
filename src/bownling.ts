@@ -7,25 +7,17 @@ type KnockedPin = KnockedPinNot10 | 10;
 type KnockedPinOrWaiting = KnockedPin | undefined; // undefined indica que se espera su lanzamiento
 
 
-export type Frame = Readonly<{
-    knocked1?: KnockedPin,
-    knocked2?: KnockedPinOrWaiting, 
-    bonus1?: KnockedPinOrWaiting, 
-    bonus2?: KnockedPinOrWaiting,
-    error?: String,
-}>;
+type Spare = Readonly<{knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting}>; 
 
-       
-type Spare = {knocked1: KnockedPinNot10, knocked2: KnockedPin, bonus1: KnockedPinOrWaiting}; 
+type Normal = Readonly<{knocked1: KnockedPinNot10, knocked2: KnockedPinNot10}>;
 
-type Normal = {knocked1: KnockedPinNot10, knocked2: KnockedPinNot10};
+type Incomplete = Readonly<{knocked1: KnockedPinNot10}>;
 
-type Incomplete = {knocked1: KnockedPinNot10};
+type Strike = Readonly<{knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting}>;
 
-type Strike = {knocked1: 10, bonus1: KnockedPinOrWaiting, bonus2: KnockedPinOrWaiting};
+type Error = Readonly<{error: String, knocked1?: KnockedPin, knocked2?: KnockedPin, bonus1?: KnockedPin, bonus2?: KnockedPin}>;
 
-type Error = {error: String, knocked1?: KnockedPin, knocked2?: KnockedPin, bonus1?: KnockedPin, bonus2?: KnockedPin};
-
+export type Frame = Spare | Normal | Incomplete | Strike | Error;
 
 
 function incomplete(knocked: KnockedPinNot10): Incomplete {
@@ -67,44 +59,40 @@ function error(error: String, knocked1?: KnockedPin, knocked2?: KnockedPin, bonu
     }  
 }
 
-export function isError(frame: Frame): Boolean {
+export function isError(frame: Frame): frame is Error {
   return frame != undefined && frame.hasOwnProperty("error");
 }
 
-export function isIncomplete(frame: Frame): Boolean {
+export function isIncomplete(frame: Frame): frame is Incomplete {
     return frame != undefined && !isError(frame) && !isStrike(frame)&& !frame.hasOwnProperty("knocked2");
 }
 
-export function isStrike(frame: Frame): Boolean{
-    return !isError(frame) && frame.knocked1 == 10;
+export function isStrike(frame: Frame): frame is Strike {
+    return !isError(frame) && frame.knocked1 === 10;
 }
 
-export function isSpare(frame: Frame): Boolean {
-    return !isError(frame) && !isIncomplete(frame) && (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) == 10;
+export function isSpare(frame: Frame): frame is Spare {
+    return !isError(frame) && "knocked2" in frame && (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) == 10;
 }
 
-export function isNormal(frame: Frame): Boolean {
-    return !isError(frame) && !isIncomplete(frame) && (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) < 10;
+export function isNormal(frame: Frame): frame is Normal {
+    return !isError(frame) && "knocked2" in frame && (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) < 10;
 }
 
 
 const applyBonus = (frame: Frame) => (knocked: KnockedPin): Frame[] => {
-   return frame == undefined? [] :
-          isError(frame) ? [frame] :
-          frame.hasOwnProperty("bonus1") && frame.bonus1 == undefined? [{...frame, bonus1: knocked}] :
-          !frame.hasOwnProperty("bonus2") || frame.bonus2 != undefined? [frame] :
-          frame.bonus1 != 10 && (frame.bonus1 ?? 0)+ knocked > 10? [error("bonus error", frame.knocked1, frame.knocked2, frame.bonus1, knocked)] :
-          [{...frame, bonus2: knocked}] 
+   return frame == undefined? []:
+          !("bonus1" in frame)? [frame] :
+          frame.bonus1 === undefined? [{...frame, bonus1: knocked}] :
+          !("bonus2" in frame) || frame.bonus2 != undefined? [frame] :
+          frame.bonus1 != 10 && (frame.bonus1 ?? 0) + knocked > 10? [{...frame, error: "bonus error", bonus1: frame.bonus1, bonus2: knocked}] : 
+          [{...frame, bonus2: knocked}]
 }
 
-const completeFrame = (frame: Frame) => function (knocked2: KnockedPin): Normal | Spare | Error {
-   return frame.knocked1 == undefined?
-            error("primera tirada no definida", frame.knocked1, knocked2) :
-            frame.knocked1 == 10 || knocked2 == 10 ?
-                error("primera o segunda tirada es 10", frame.knocked1, knocked2) :
-                frame.knocked1 + knocked2 > 10 ?
+const completeFrame = (frame: Incomplete) => function (knocked2: KnockedPin): Normal | Spare | Error {
+   return   frame.knocked1 + knocked2 > 10 ?
                     error ("suma mayor de 10", frame.knocked1, knocked2) :
-                    frame.knocked1 + knocked2 == 10?
+                    frame.knocked1 + knocked2 == 10 || knocked2 == 10?
                         spare(frame.knocked1, knocked2) :
                         normal(frame.knocked1, knocked2);
 }
@@ -114,20 +102,17 @@ const createFrame = (knocked: KnockedPin): Strike | Incomplete => {
     return knocked == 10 ? strike() : incomplete(knocked)
 }
 
-
-
 function add(knocked: KnockedPin, frames: Frame[]): Frame[] {
-     return isIncomplete(frames[frames.length-1])?
+    const last = frames[frames.length-1];
+     return isIncomplete(last)?
                 frames.slice(0, -2).concat(
                     applyBonus(frames[frames.length-2])(knocked), 
-                    completeFrame(frames[frames.length-1])(knocked)) :
+                    completeFrame(last)(knocked)) :
      
                 frames.slice(0, -2).concat(
                     applyBonus(frames[frames.length-2])(knocked),
                     applyBonus(frames[frames.length-1])(knocked),
-                    frames.length===10? [] : createFrame(knocked)) 
-            
-          
+                    frames.length===10? [] : createFrame(knocked))        
 }
 
 export function buildFrames(knockeds: KnockedPin[], frames: Frame[] = []): Frame[] {
@@ -135,14 +120,33 @@ export function buildFrames(knockeds: KnockedPin[], frames: Frame[] = []): Frame
         buildFrames(knockeds.slice(1), add(knockeds[0], frames))
 }
 
-export function frameToPoints(frame: Frame): number {
-    return isError(frame) ? 0 :
-       (frame.knocked1 ?? 0) + (frame.knocked2 ?? 0) + (frame.bonus1 ?? 0)+ (frame.bonus2 ?? 0);
+function scoreStrike(strike: Strike): number {
+    return strike.knocked1 + (strike.bonus1 ?? 0) + (strike.bonus2 ?? 0);
 }
 
-export function framesToPoints(frames: Frame[]): number {
+function scoreSpare(spare: Spare): number {
+    return spare.knocked1 + (spare.knocked2 ?? 0) + (spare.bonus1 ?? 0);
+}
+
+function scoreNormal(normal: Normal): number {
+    return normal.knocked1 + (normal.knocked2 ?? 0);
+}
+
+function scoreIncomplete(incomplete: Incomplete): number {
+    return incomplete.knocked1;
+}
+
+function score(frame: Frame): number {
+    return isStrike(frame)? scoreStrike(frame) :
+           isSpare(frame) ? scoreSpare(frame) :
+           isNormal(frame) ? scoreNormal(frame) :
+           isIncomplete(frame) ? scoreIncomplete(frame) :
+           0
+}
+
+export function totalScore(frames: Array<NonNullable<Frame>>): number {
     return frames.reduce((previous, current) => {
-        return previous + frameToPoints(current);
+        return previous + score(current);
     }, 0);
 }
 

@@ -3,7 +3,7 @@
   "version": "0.0.5",
   "description": "ejercicios de typescript",
   "main": "app.js",
-  "type":"module",
+  "type": "module",
   "scripts": {
     "build-all": "tsc --build --force",
     "build": "tsc --build",
