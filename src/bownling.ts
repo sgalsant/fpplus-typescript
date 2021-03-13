@@ -102,7 +102,7 @@ const createFrame = (knocked: KnockedPin): Strike | Incomplete => {
     return knocked == 10 ? strike() : incomplete(knocked)
 }
 
-function buildFrame(knocked: KnockedPin, frames: Frame[]): Frame[] {
+function addKnocked(knocked: KnockedPin, frames: Frame[]): Frame[] {
     const last = frames[frames.length-1];
      return isIncomplete(last)?
                 frames.slice(0, -2).concat(
@@ -116,7 +116,7 @@ function buildFrame(knocked: KnockedPin, frames: Frame[]): Frame[] {
 }
 
 export function buildFrames(knockeds: KnockedPin[]): Frame[] {
-   return knockeds.reduce((frames: Frame[], knocked) => buildFrame(knocked, frames), []);
+   return knockeds.reduce((frames: Frame[], knocked) => addKnocked(knocked, frames), []);
 }
 
 function scoreStrike(strike: Strike): number {
